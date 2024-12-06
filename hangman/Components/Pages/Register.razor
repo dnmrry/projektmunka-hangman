@@ -1,0 +1,86 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using hangman.Models
+@using hangman.Services
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+<MudSnackbarProvider />
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudPaper Elevation="4" Class="mx-auto p-6 rounded-lg shadow-xl align-center">
+        <MudText Typo="Typo.h2" Align="Align.Center" Style="margin: auto">Regisztráció</MudText>
+
+
+
+        <p>@_message</p>
+
+        <MudTextField T="string" @bind-Value="_username" Label="Username" 
+                      Variant="Variant.Outlined" Placeholder="Enter your username"
+                      FullWidth="true" />
+        <MudTextField T="string" @bind-Value="_password" Label="Password"
+                      Required="true"
+                      Variant="Variant.Outlined" Placeholder="Enter your password"
+                      FullWidth="true" InputType="InputType.Password" />
+        <MudTextField T="string" @bind-Value="_confirmPassword" Label="Confirm Password"
+                      Required="true"
+                      Variant="Variant.Outlined" Placeholder="Confirm your password"
+                      FullWidth="true" InputType="InputType.Password" />
+
+        <MudButton OnClick="HandleRegister" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Type="submit">
+            Regisztráció
+        </MudButton>
+
+        <MudLink Href="/login" Class="d-block mt-2" Color="Color.Primary">Van már fiókod? Jelentkezz be!</MudLink>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _message;
+
+    public string? _username;
+    public string? _password;
+    public string? _confirmPassword;
+
+    private void HandleRegister()
+    {
+      
+
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password) || string.IsNullOrWhiteSpace(_confirmPassword))
+        {
+            Snackbar.Add("Üres mezők");
+            return;
+        }
+
+        if (_username.Length < 6)
+        {
+            Snackbar.Add("Túl rövid username");
+            return;
+        }
+ 
+
+        if (_confirmPassword != _password)
+        {
+            Snackbar.Add("Nem egyezik a két jelszó");
+            return;
+        }
+
+
+        var existingUser = UserService.GetUserByUsername(_username);
+        if (existingUser != null)
+        {
+            _message = "Username foglalt.";
+            return;
+        }
+
+        var newUser = new User
+            {
+                Username = _username,
+                Password = HashString(_password),
+                Score = 0
+            };
+
+        UserService.AddUser(newUser);
+        _message = "Sikeres regisztráció";
+        NavManager.NavigateTo("/login");
+    }
+}
+

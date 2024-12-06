@@ -1,0 +1,29 @@
+﻿.keyboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.keyboard-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.key {
+    background-color: #594ae2ff;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 1rem;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+    .key:hover {
+        background-color: #473cb5ff;
+    }

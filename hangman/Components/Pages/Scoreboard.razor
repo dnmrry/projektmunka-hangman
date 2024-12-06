@@ -1,0 +1,49 @@
+﻿
+@using hangman.Models
+@using MudBlazor
+
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="d-flex justify-center align-center mt-16">
+    <MudPaper Elevation="6" Width="1000px" MaxWidth="100%" Class="p-4">
+        @if (Users is null || !Users.Any())
+        {
+            <MudText>No scores available.</MudText>
+        }
+        else
+        {
+
+            <MudSimpleTable Style="width: 100%;">
+                <thead class="mud-theme-primary">
+                    <tr>
+                        <th style="text-align: left;">Username</th>
+                        <th style="text-align: right;">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Users)
+                    {
+                        <tr>
+                            <td style="text-align: left; padding-right: 20px;"><b>@user.Username</b></td>
+                            <td style="text-align: right; padding-left: 20px;">@user.Score</td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+
+    private List<User> Users;
+
+    protected override void OnInitialized()
+    {
+        Users = UserService.GetAllUsers().OrderByDescending(u => u.Score ?? 0).ToList();
+
+
+    }
+    
+
+   
+}

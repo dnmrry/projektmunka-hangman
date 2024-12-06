@@ -1,0 +1,32 @@
+﻿<div class="keyboard">
+    @foreach (var row in KeyboardRows)
+    {
+        <div class="keyboard-row">
+            @foreach (var c in row)
+            {
+                <div class="key" @onclick="() => KeyPressed(c)" >
+                    @c
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<string> KeyboardRows = new()
+    {
+        "qwertzuiopőúöüó",
+        "asdfghjkléáű",
+        "íyxcvbnm"
+    };
+
+    [Parameter] public EventCallback<char> OnKeyPress { get; set; }
+
+    private async void KeyPressed(char key)
+    {
+        if (OnKeyPress.HasDelegate)
+        {
+            await OnKeyPress.InvokeAsync(key);
+        }
+    }
+}

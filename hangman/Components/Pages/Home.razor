@@ -1,0 +1,128 @@
+﻿@page "/"
+@using hangman.Services
+@using Microsoft.AspNetCore.Components
+<MudSnackbarProvider />
+<PageTitle>Home</PageTitle>
+
+
+<MudThemeProvider />
+
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h5" Class="ml-3">Akasztófa</MudText>
+        <MudSpacer />
+    </MudAppBar>
+
+    <MudMainContent>
+       <MudContainer Class="mt-16">
+
+            <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Üdvözlünk az akasztófa játékban!</MudText>
+            <MudText Align="Align.Center">Hozz létre egy szobát, vagy csatlakozz egy meglévőhöz kóddal!</MudText>
+            <MudGrid Class="mt-8">
+                <MudItem xs="12" sm="6">
+                    <MudCard Elevation="25" Class="rounded-lg pb-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h5" Align="Align.Center">Szoba létrehozása</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudTextField @bind-Value="RoomName" Label="Szoba neve" Class="mb-2" />
+                            <MudTextField @bind-Value="Password" Label="Jelszó (opcionális)" Class="mb-2" />
+
+                            @if (!string.IsNullOrEmpty(RoomCreatedMessage))
+                            {
+                                <MudAlert Severity="Severity.Success" Class="mt-3">
+                                    @RoomCreatedMessage
+                                </MudAlert>
+                            }
+                        </MudCardContent>
+                        <MudCardActions Class="d-flex justify-center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="width:50%;" OnClick="CreateRoom">Létrehoz</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudCard Elevation="25" Class="rounded-lg pb-4">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h5" Align="Align.Center">Csatlakozás szobához</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudTextField @bind-Value="RoomCode" Label="Szoba kód (kötelező)" Required="true" Class="mb-2" />
+                            <MudTextField @bind-Value="PasswordReq" Label="Jelszó (ha van)" Class="mb-2" />
+                            @if (!string.IsNullOrEmpty(JoinRoomMessage))
+                            {
+                                <MudAlert Severity="Severity.Error" Class="mt-3">
+                                    @JoinRoomMessage
+                                </MudAlert>
+                            }
+                        </MudCardContent>
+                        <MudCardActions Class="d-flex justify-center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="width:50%;" OnClick="JoinRoom">Csatlakozás</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+            <MudPaper Elevation="10" Class="mt-8 p-4 d-flex flex-column align-center">
+                <MudText Typo="Typo.h5" Class="mb-2" Align="Align.Center">Ranglista</MudText>
+                <Scoreboard />
+            </MudPaper>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+
+
+@code {
+
+
+    private string RoomName = string.Empty;
+    private string? Password;
+    private string RoomCode = string.Empty;
+    private string? PasswordReq;
+    private string? JoinRoomMessage;
+
+    private string? RoomCreatedMessage;
+
+    protected override void OnInitialized()
+    {
+        if(MyClient.User is null)
+        {
+            NavigationManager.NavigateTo("/login"); 
+        }
+    }
+
+    
+    private void CreateRoom()
+    {
+        var room = RoomService.CreateRoom(RoomName, Password!);
+        room.Users.Add(MyClient.User!);
+        RoomCreatedMessage = $"Room '{room.Name}' created! Connection Code: {room.ConnectionCode}";
+        NavManager.NavigateTo($"/lobby/{room.ConnectionCode}");
+
+    }
+
+
+    private void JoinRoom()
+    {
+        var room = RoomService.GetRoomByCode(RoomCode);
+
+        if (room == null)
+        {
+            JoinRoomMessage = "Nincs ilyen szoba.";
+        }
+        else if (!string.IsNullOrEmpty(room.Password) && room.Password != PasswordReq)
+        {
+            JoinRoomMessage = "Helytelen jelszó.";
+        }
+        else
+        {
+            JoinRoomMessage = "Successfully joined the room!";
+            room.AddUser(MyClient.User!);
+            NavManager.NavigateTo($"/lobby/{RoomCode}");
+        }
+    }
+}

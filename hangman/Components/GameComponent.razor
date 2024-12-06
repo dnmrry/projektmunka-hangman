@@ -1,0 +1,141 @@
+﻿@using hangman.Models
+@using hangman.Services
+@inject RoomService RoomService
+
+<MudContainer>
+
+    @if (Game.CurrentGameState == GameState.InProgress)
+    {
+      
+        <MudGrid>
+            <MudItem xs="8">
+                <MudText Typo="Typo.h5" Align="Align.Center">
+                    Szó: <span style="font-weight:bold;">@Game.MaskedWord</span>
+                </MudText>
+                <MudText Typo="Typo.body1" Align="Align.Center">
+                    <pre>@Game.GetHangmanFigure()</pre>
+                </MudText>
+             
+                <MudText Typo="Typo.h6" Align="Align.Center" Class="mt-4">
+                    Találgatott betűk: <span>@string.Join(", ", GuessedLetters)</span>
+                </MudText>
+
+                
+            </MudItem>
+             <MudItem xs="4">
+                <MudCard Class="mt-4 mud-theme-primary" Variant="Variant.Filled">
+                    <MudCardContent>
+                    <MudText Typo="Typo.h6" Align="Align.Center">
+                         @Game.GetCurrentPlayer().Username következik
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+            <MudCard Class="mt-4" Variant="Variant.Outlined" Color="Color.Default">
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2" Align="Align.Center">
+                            <b>Találgatott szavak:</b>
+                        </MudText>
+                        <MudList T="string" Dense="true">
+                            @foreach (var word in Game.GuessedWords)
+                            {
+                                <MudListItem>@word</MudListItem>
+                            }
+                        </MudList> 
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+        @if (Game.GetCurrentPlayer().Username == MyClient.User.Username)
+        {
+            <Keyboard OnKeyPress="HandleKeyPress" />
+        }
+
+        else
+        {
+            <Keyboard />
+        }
+    }
+    <MudTextField T="string" Label="Kitaláltad a szót?" @bind-Value="WordGuess" Class="mt-4" Variant="Variant.Outlined" />
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-2" @onclick="HandleWordGuess">
+        Megvan!
+    </MudButton>
+
+    @if (!string.IsNullOrEmpty(FeedbackMessage))
+    {
+        <MudAlert Severity="@FeedbackSeverity" Class="mt-3">@FeedbackMessage</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Room CurrentRoom { get; set; }
+    private Game Game => CurrentRoom._game;
+    private string WordGuess { get; set; } = string.Empty;
+
+    private HashSet<char> GuessedLetters => Game.GuessedLetters;
+    private string FeedbackMessage = string.Empty;
+    private Severity FeedbackSeverity = Severity.Info;
+
+
+    protected override void OnInitialized()
+    {
+        CurrentRoom.RoomUpdated += (s,r)=>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+    }
+
+    private void HandleKeyPress(char key)
+    {
+        if (char.IsLetter(key))
+        {
+            char upperKey = char.ToUpper(key);
+
+            
+            bool correct = Game.GuessLetter(upperKey);
+
+            if (correct)
+            {
+                FeedbackMessage = "Helyes!";
+                FeedbackSeverity = Severity.Success;
+            }
+            else
+            {
+                FeedbackMessage = "Helytelen, próbáld újra";
+                FeedbackSeverity = Severity.Error;
+            }
+
+           
+            Game.NextRound();
+
+           
+            CurrentRoom.TriggerUpdate();
+        }
+    }
+    private void HandleWordGuess()
+    {
+        if (string.IsNullOrWhiteSpace(WordGuess))
+        {
+            FeedbackMessage = "Üres mező.";
+            FeedbackSeverity = Severity.Warning;
+            return;
+        }
+
+        bool correct = Game.GuessWord(WordGuess);
+
+        if (correct)
+        {
+
+            Snackbar.Add("Kitaláltad!", Severity.Success);
+        }
+
+        else
+        {
+            FeedbackMessage = "Helytelen szó!";
+            FeedbackSeverity = Severity.Error;
+        }
+
+        Game.NextRound();
+        CurrentRoom.TriggerUpdate();
+    }
+}

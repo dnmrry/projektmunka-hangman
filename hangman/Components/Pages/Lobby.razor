@@ -1,0 +1,116 @@
+﻿@page "/lobby/{ConnectionCode}"
+@using hangman.Models
+@using hangman.Services
+@using MudBlazor
+
+<MudAppBar Elevation="1">
+    <MudText Typo="Typo.h5" Class="ml-3">Lobby</MudText>
+    <MudSpacer />
+</MudAppBar>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="d-flex justify-center align-center mt-16">
+    <MudPaper Class="p-6 rounded-lg shadow-xl" Elevation="6" Style="width: 100%;">
+        <MudText Typo="Typo.h5">Lobby név: @Room?.Name</MudText>
+
+        <MudText Typo="Typo.h5">Kód: <MudText Typo="Typo.h5" Color="Color.Secondary" Inline="true">@Room?.ConnectionCode</MudText></MudText>
+
+
+
+        <MudDivider Class="my-3" />
+
+        <MudList T="string" Dense="true">
+            <MudListSubheader>Players</MudListSubheader>
+            @if (Room?.Users.Any() == true)
+            {
+                @foreach (var user in Room.Users)
+                {
+                    <MudListItem>
+                        <MudText><MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />@user.Username</MudText>
+                    </MudListItem>
+                }
+            }
+            else
+            {
+                <MudListItem>
+                    <MudText>Nincsenek játékosok</MudText>
+                </MudListItem>
+            }
+        </MudList>
+
+        <MudDivider Class="my-3" />
+
+        @if (Room._game.CurrentGameState == GameState.InProgress)
+        {
+            <GameComponent CurrentRoom="Room" />
+             
+
+        }
+        else if ((Room._game.CurrentGameState == GameState.NotStarted))
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="mt-4" FullWidth="true" OnClick="StartGame">
+                Start Game
+            </MudButton>
+        }
+        
+        else 
+        {
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mt-4">Játék Vége</MudText>
+        <MudText Typo="Typo.h5" Align="Align.Center">
+            A szó: <b>@Room._game.CurrentWord</b>
+        </MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="mt-2">
+                Nyertes:<b>@Room._game.LastGuesser</b> 
+            </MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Success" Class="mt-2" FullWidth="true" OnClick="StartGame">
+            Újra
+        </MudButton>
+        }
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" Class="mt-2" FullWidth="true" OnClick="LeaveRoom">
+            Kilépés
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter]
+    public string ConnectionCode { get; set; }
+
+    private Room Room;
+
+    protected override void OnInitialized()
+    {
+        Room = RoomService.GetRoomByCode(ConnectionCode);
+        if (Room is null)
+        {
+            NavManager.NavigateTo("/");
+            return;
+        }
+        Room.RoomUpdated += OnRoomUpdate;
+    }
+
+    private void OnRoomUpdate(object? sender, Room room)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void StartGame()
+    {
+        Room?.StartGame();
+        Room._game.GuessedWords.Clear();
+    }
+
+    @implements IDisposable
+    private void LeaveRoom()
+    {
+        ((IDisposable)this).Dispose();
+        NavManager.NavigateTo("/");
+    }
+
+    void IDisposable.Dispose()
+    {
+        if (MyClient.User is not null)
+        {
+            Room.RemoveUser(MyClient.User.UserId);
+        }
+    }
+}

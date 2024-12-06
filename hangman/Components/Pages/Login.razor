@@ -1,0 +1,68 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using hangman.Models
+@using hangman.Services
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+
+<MudSnackbarProvider />
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudPaper Elevation="4" Class="mx-auto p-6 rounded-lg shadow-xl align-center">
+        <MudText Typo="Typo.h2" Align="Align.Center" Style="margin: auto">Bejelentkezés</MudText>
+
+
+
+
+        <MudTextField T="string" @bind-Value="_username" Label="Username" Required="true"
+                      Variant="Variant.Outlined" Placeholder="Felhasználónév"
+                      FullWidth="true" />
+        <MudTextField T="string" @bind-Value="_password" Label="Jelszó"
+                      Required="true"
+                      Variant="Variant.Outlined" Placeholder="Jelszó"
+                      FullWidth="true" InputType="InputType.Password" />
+
+     
+
+            <MudButton Variant="Variant.Filled"  OnClick="LoginUser" Color="Color.Primary" FullWidth="true" Type="submit" 
+                       Class="mt-3">Bejelentkezés</MudButton>
+
+
+        <MudLink Href="/register" Class="d-block mt-2 text-center" Color="Color.Primary">Nincs fiókod? Regisztrálj!</MudLink>
+
+        <p>@_message</p>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string? _message;
+    public string? _username;
+    public string? _password;
+
+
+    private void LoginUser()
+    {
+        if (string.IsNullOrWhiteSpace(_username))
+        {
+            Snackbar.Add("Üres username mező");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            Snackbar.Add("Üres jelszó mező");
+            return;
+        }
+
+        var user = UserService.GetUserByUsername(_username);  
+        
+        if (user != null && user.Password == HashString(_password))
+        {
+           
+            MyClient.User = user;
+            NavManager.NavigateTo("/");
+        }
+
+    }
+
+    
+}
